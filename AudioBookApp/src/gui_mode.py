@@ -1,75 +1,77 @@
-import tkinter as tk
-from tkinter import filedialog, messagebox
-# import main
+import sys
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QListWidget, QLineEdit, QLabel, QFileDialog, QMessageBox
 import pdf_man
 
-def gui_mode():
-    def add_pdfs():
-        files = filedialog.askopenfilenames(filetypes=[("PDF files", "*.pdf")])
-        for file in files:
-            pdf_listbox.insert(tk.END, file)
+class PDFToAudioConverter(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
 
-    def select_output_path():
-        path = filedialog.askdirectory()
-        output_path_entry.delete(0, tk.END)
-        output_path_entry.insert(0, path)
+    def initUI(self):
+        layout = QVBoxLayout()
 
-    def convert():
-        pdf_files = pdf_listbox.get(0, tk.END)
-        output_path = output_path_entry.get()
-        audio_filename = audio_name_entry.get() + ".mp3"
+        self.add_pdfs_button = QPushButton('Add PDFs', self)
+        self.add_pdfs_button.clicked.connect(self.add_pdfs)
+        layout.addWidget(self.add_pdfs_button)
+
+        self.pdf_list = QListWidget(self)
+        layout.addWidget(self.pdf_list)
+
+        self.output_path_button = QPushButton('Output Path', self)
+        self.output_path_button.clicked.connect(self.select_output_path)
+        layout.addWidget(self.output_path_button)
+
+        self.output_path_input = QLineEdit(self)
+        layout.addWidget(self.output_path_input)
+
+        self.audio_file_label = QLabel('Audio File Name (without .mp3):', self)
+        layout.addWidget(self.audio_file_label)
+
+        self.audio_file_input = QLineEdit(self)
+        layout.addWidget(self.audio_file_input)
+
+        self.convert_button = QPushButton('Convert', self)
+        self.convert_button.clicked.connect(self.convert)
+        layout.addWidget(self.convert_button)
+
+        self.setLayout(layout)
+        self.setWindowTitle('PDF to Audio Converter')
+        self.show()
+
+    def add_pdfs(self):
+        files, _ = QFileDialog.getOpenFileNames(self, 'Open PDF Files', '.', 'PDF Files (*.pdf)')
+        if files:
+            for file in files:
+                self.pdf_list.addItem(file)
+
+    def select_output_path(self):
+        path = QFileDialog.getExistingDirectory(self, 'Select Output Directory')
+        if path:
+            self.output_path_input.setText(path)
+
+    def convert(self):
+        pdf_files = [self.pdf_list.item(i).text() for i in range(self.pdf_list.count())]
+        output_path = self.output_path_input.text()
+        audio_filename = self.audio_file_input.text() + ".mp3"
+
         if not pdf_files:
-            messagebox.showerror("Error", "Please add at least one PDF file.")
+            QMessageBox.critical(self, 'Error', 'Please add at least one PDF file.')
             return
         if not output_path:
-            messagebox.showerror("Error", "Please select an output path.")
+            QMessageBox.critical(self, 'Error', 'Please select an output path.')
             return
         if not audio_filename:
-            messagebox.showerror("Error", "Please enter a name for the audio file.")
+            QMessageBox.critical(self, 'Error', 'Please enter a name for the audio file.')
             return
+
         pdf_man.merge_pdf_files(pdf_files, "merged.pdf")
         pdf_man.pdf_to_audio("merged.pdf", f"{output_path}/{audio_filename}")
-        messagebox.showinfo("Success", f"Audio file saved at {output_path}/{audio_filename}")
+        QMessageBox.information(self, 'Success', f'Audio file saved at {output_path}/{audio_filename}')
 
-    root = tk.Tk()
-    root.title("PDF to Audio Converter")
-    root.configure(bg="#f0f0f0")
+def main():
+    app = QApplication(sys.argv)
+    ex = PDFToAudioConverter()
+    sys.exit(app.exec())
 
-    frame = tk.Frame(root, padx=10, pady=10, bg="#f0f0f0")
-    frame.pack(padx=10, pady=10)
-
-    button_style = {"bg": "#2196F3", "fg": "white", "font": ("Helvetica", 12), "relief": "flat", "bd": 0, "highlightthickness": 0}
-    button_style["activebackground"] = "#1976D2"
-    button_style["activeforeground"] = "white"
-
-    add_pdf_button = tk.Button(frame, text="Add PDFs", command=add_pdfs, **button_style)
-    add_pdf_button.grid(row=0, column=0, pady=5)
-    add_pdf_button.configure(borderwidth=0, highlightthickness=0, padx=10, pady=5)
-    add_pdf_button.configure(highlightbackground="#2196F3", highlightcolor="#2196F3", highlightthickness=1)
-    add_pdf_button.configure(borderwidth=1, relief="solid", overrelief="solid")
-
-    pdf_listbox = tk.Listbox(frame, selectmode=tk.MULTIPLE, width=50, height=10, font=("Helvetica", 10))
-    pdf_listbox.grid(row=1, column=0, columnspan=2, pady=5)
-
-    output_path_button = tk.Button(frame, text="Output Path", command=select_output_path, **button_style)
-    output_path_button.grid(row=2, column=0, pady=5)
-    output_path_button.configure(borderwidth=0, highlightthickness=0, padx=10, pady=5)
-    output_path_button.configure(highlightbackground="#2196F3", highlightcolor="#2196F3", highlightthickness=1)
-    output_path_button.configure(borderwidth=1, relief="solid", overrelief="solid")
-
-    output_path_entry = tk.Entry(frame, width=50, font=("Helvetica", 10))
-    output_path_entry.grid(row=2, column=1, pady=5)
-
-    audio_name_label = tk.Label(frame, text="Audio File Name (without .mp3):", bg="#f0f0f0", font=("Helvetica", 12))
-    audio_name_label.grid(row=3, column=0, pady=5)
-
-    audio_name_entry = tk.Entry(frame, width=50, font=("Helvetica", 10))
-    audio_name_entry.grid(row=3, column=1, pady=5)
-
-    convert_button = tk.Button(frame, text="Convert", command=convert, **button_style)
-    convert_button.grid(row=4, column=0, columnspan=2, pady=10)
-    convert_button.configure(borderwidth=0, highlightthickness=0, padx=10, pady=5)
-    convert_button.configure(highlightbackground="#2196F3", highlightcolor="#2196F3", highlightthickness=1)
-    convert_button.configure(borderwidth=1, relief="solid", overrelief="solid")
-
-    root.mainloop()
+if __name__ == '__main__':
+    main()

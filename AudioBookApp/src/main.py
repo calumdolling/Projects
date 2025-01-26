@@ -9,9 +9,13 @@
 
     Args:
         pdf_path (str): Path to the PDF file
-        audio_path (str): Path to save the audio file 
+        audio_path (str): Path to save the audio file
+        interactive (bool): Interactive mode
+        gui (bool): Launch the GUI
+        merge (bool): Merge multiple PDF files into one before converting to audio
         
-    
+    Returns:
+        None
     """
     
 import argparse
@@ -35,7 +39,7 @@ def check_args(args):
         pdf_man.merge_pdf_files(args.pdf_paths, "merged.pdf")
         args.pdf_path = "merged.pdf"
     if args.gui:
-        gui_mode.gui_mode()
+        gui_mode.main()
     if not args.pdf_path.endswith('.pdf'):
         raise ValueError("PDF file must have a .pdf extension")
     if not args.audio_path.endswith('.mp3'):
